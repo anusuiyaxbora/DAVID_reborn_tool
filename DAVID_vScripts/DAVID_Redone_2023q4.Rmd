@@ -1,0 +1,210 @@
+---
+title: "DAVID Redone Code"
+author: "Anusuiya Bora; s222331482@deakin.edu.au"
+#output: html_document
+output: 
+  html_document:
+    code_folding: show 
+date: "2024-05-01"
+---
+
+### This is for DAVID 2023 - quarter 4 version
+
+### Methodology:
+1. Loading libraries
+
+```{r loading_libraries}
+
+library("clusterProfiler")
+library("kableExtra")
+library("dplyr")
+library("rio")
+library("here")
+library("gtsummary")
+library("ggplot2")
+
+```
+
+
+2) Input gene list:
+
+``` {r loading_input_genes}
+
+#genelist_path <- "~/Projects/DAVID_Reborn/Data/input_genelist"
+
+genelist <- read.csv("../input_lists/PMC6587650.csv")
+
+# getwd()
+# setwd ("..")
+#genelist <- "PMC6587650.csv"
+#genelist <- read.csv("PMC6587650.csv")
+
+Genevec <- genelist[, 1]
+
+```
+
+3) Loading GO datsets
+
+```{r include=FALSE, echo=FALSE, load_GORDS}
+
+
+gobp_2023 <- readRDS("../go_gaf_datasets/go2023q4/GO_bp_2023q4.Rds")
+
+# getwd()
+# setwd(..) 
+
+gomf_2023 <- readRDS("../go_gaf_datasets/go2023q4/GO_mf_2023q4.Rds")
+
+gocc_2023 <- readRDS("../go_gaf_datasets/go2023q4/GO_cc_2023q4.Rds")
+
+gocombined_2023 <- readRDS("../go_gaf_datasets/go2023q4/GO_combined_2023q4.Rds")
+
+# gobp <- rio::import(here::here("Data", "GO_dataset", "GObp.rds"))
+# gocc <- rio::import(here::here("Data", "GO_dataset", "GOcc.rds"))
+# gomf <- rio::import(here::here("Data", "GO_dataset", "GOmf.rds"))
+# gocombined <- rio::import(here::here("Data", "GO_dataset", "GOcombined.rds"))
+
+```
+
+
+```{r include=FALSE, echo=FALSE, converting_RDS2gmt}
+gobp_terms <- rev(stack(gobp_2023))
+str(gobp_terms)
+
+gocc_terms <- rev(stack(gocc_2023))
+str(gocc_terms)
+
+gomf_terms <- rev(stack(gomf_2023))
+str(gomf_terms)
+
+gocombined_terms <- rev(stack(gocombined_2023))
+str(gocombined_terms)
+
+#goterms <- rev(stack(golist))
+#str(goterms)
+
+```
+
+5) Performing Enrichment analysis
+
+```{r include=T, echo=T, enricher_code}
+ora <- as.data.frame(enricher(gene = Genevec ,
+                              minGSSize = 10,
+                              maxGSSize = 50000, 
+                              TERM2GENE = gocombined_terms, #for TERM2GENE, options are: gobp_terms, gocc_terms, gomf_terms, gocombined_terms
+                              pAdjustMethod="fdr",  
+                              pvalueCutoff = 1, 
+                              qvalueCutoff = 1  ))
+
+x <- gsub("/", " ", ora$geneID) #to separate geneIds from /
+
+head(x)
+
+dim(ora)
+
+ora$geneID <- x
+
+ora$ID <- NULL
+rownames(ora) <- NULL #removing empty 1st column name
+
+ora$S_No <- seq_len(nrow(ora))
+ora <- ora[, c("S_No", names(ora)[-which(names(ora) == "S_No")])]
+
+head(ora)
+
+```
+
+
+6) Calculating enrichment scores
+
+``` {r include=FALSE, echo=FALSE, ES_calculation}
+
+ora$gene <- NULL
+
+gr <- as.numeric(sapply(strsplit(ora$GeneRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora$GeneRatio,"/"),"[[",2))
+
+br <- as.numeric(sapply(strsplit(ora$BgRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora$BgRatio,"/"),"[[",2))
+
+es <- gr/br
+
+ora_new <- cbind(ora, gr, br, es)
+
+names(ora_new)[names(ora_new) == "es"] <- "EnrichmentScore"
+
+ora_arranged <- ora_new %>% 
+  arrange(p.adjust)
+
+head(ora_arranged)
+
+
+```
+
+7) Selecting pathways with FDR<0.05
+
+```{r pathways_FDR}
+
+ora_fdr2023 <- ora_arranged %>%
+  filter(p.adjust < 0.05)
+
+```
+
+
+
+```{r output_table}
+
+ora_fdr2023 %>%
+  kbl(caption="Genes and GO Terms identified, FDR &lt; 0.05") %>%
+  kable_paper("hover", full_width = F)
+
+```
+
+```{r complete_results, results='asis', echo=FALSE}
+
+HEADER=paste("<br><details><summary><b>","Click HERE to show results for all gene sets","</b></summary><br><p>",sep=" " )
+ 
+cat(HEADER)
+ 
+kbl(ora_arranged, format="html", row.names=FALSE, caption = "Complete results",digits=100) %>%
+kable_styling("hover", full_width = FALSE)
+ 
+cat("<br></p></details>")
+cat("<hr><br>")
+
+```
+
+```{r pie_chart}
+
+# aggregate_data <- aggregate(EnrichmentScore ~ Description, data = ora_fdr, FUN = sum)
+
+# Create a pie chart
+# pie(aggregate_data$EnrichmentScore, labels = aggregate_data$Description)
+
+# ggplot(ora_fdr, aes(x = "", y = Description, fill = EnrichmentScore)) +
+#  geom_bar(stat = "identity") +
+#  coord_polar(theta = "y") +
+#  labs(title = "Pie Chart for enriched terms", fill = "EnrichmentScore", y = NULL) +
+#  theme_minimal()
+
+```
+
+### Save object
+
+```{r save_object}
+
+saveRDS(ora_arranged, file = "ora_arranged2023.RDS")
+saveRDS(ora_fdr2023, file = "ora_fdr2023.RDS")
+# z <- readRDS("ora.RDS")  #To read RDS 
+
+```
+
+### Session information
+
+For reproducibility.
+
+```{r,sessioninfo}
+
+sessionInfo()
+
+```

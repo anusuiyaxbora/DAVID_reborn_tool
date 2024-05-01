@@ -8,7 +8,7 @@ output:
 date: "2024-05-01"
 ---
 
-### This is for DAVID 2023 - quarter 4 version
+### This is for DAVID 2016 (6.8 version) 
 
 ### Methodology:
 1. Loading libraries
@@ -34,8 +34,8 @@ library("ggplot2")
 
 genelist <- read.csv("../input_lists/PMC6587650.csv")
 
-# getwd()
-# setwd ("..")
+getwd() 
+setwd("..")
 #genelist <- "PMC6587650.csv"
 #genelist <- read.csv("PMC6587650.csv")
 
@@ -47,37 +47,30 @@ Genevec <- genelist[, 1]
 
 ```{r include=FALSE, echo=FALSE, load_GORDS}
 
+gobp2016 <- readRDS("../go_gaf_datasets/go2016/GObp.rds")
+gocc2016 <- readRDS("../go_gaf_datasets/go2016/GOcc.rds")
+gomf2016 <- readRDS("../go_gaf_datasets/go2016/GOmf.rds")
+gocombined2016 <- readRDS("../go_gaf_datasets/go2016/GOcombined.rds")
 
-gobp_2023 <- readRDS("../go_gaf_datasets/go2023q4/GO_bp_2023q4.Rds")
-
-# getwd()
-# setwd(..) 
-
-gomf_2023 <- readRDS("../go_gaf_datasets/go2023q4/GO_mf_2023q4.Rds")
-
-gocc_2023 <- readRDS("../go_gaf_datasets/go2023q4/GO_cc_2023q4.Rds")
-
-gocombined_2023 <- readRDS("../go_gaf_datasets/go2023q4/GO_combined_2023q4.Rds")
-
-# gobp <- rio::import(here::here("Data", "GO_dataset", "GObp.rds"))
-# gocc <- rio::import(here::here("Data", "GO_dataset", "GOcc.rds"))
-# gomf <- rio::import(here::here("Data", "GO_dataset", "GOmf.rds"))
-# gocombined <- rio::import(here::here("Data", "GO_dataset", "GOcombined.rds"))
+#gobp <- rio::import(here::here("Data", "GO_dataset", "GObp.rds"))
+#gocc <- rio::import(here::here("Data", "GO_dataset", "GOcc.rds"))
+#gomf <- rio::import(here::here("Data", "GO_dataset", "GOmf.rds"))
+#gocombined <- rio::import(here::here("Data", "GO_dataset", "GOcombined.rds"))
 
 ```
 
 
 ```{r include=FALSE, echo=FALSE, converting_RDS2gmt}
-gobp_terms <- rev(stack(gobp_2023))
+gobp_terms <- rev(stack(gobp2016))
 str(gobp_terms)
 
-gocc_terms <- rev(stack(gocc_2023))
+gocc_terms <- rev(stack(gocc2016))
 str(gocc_terms)
 
-gomf_terms <- rev(stack(gomf_2023))
+gomf_terms <- rev(stack(gomf2016))
 str(gomf_terms)
 
-gocombined_terms <- rev(stack(gocombined_2023))
+gocombined_terms <- rev(stack(gocombined2016))
 str(gocombined_terms)
 
 #goterms <- rev(stack(golist))
@@ -133,10 +126,10 @@ ora_new <- cbind(ora, gr, br, es)
 
 names(ora_new)[names(ora_new) == "es"] <- "EnrichmentScore"
 
-ora_arranged <- ora_new %>%  #ora_arranged naming done after pathways were arranged from ascending order of FDR 
+ora_arranged2016 <- ora_new %>% 
   arrange(p.adjust)
 
-head(ora_arranged)
+head(ora_arranged2016)
 
 
 ```
@@ -145,7 +138,7 @@ head(ora_arranged)
 
 ```{r pathways_FDR}
 
-ora_fdr2023 <- ora_arranged %>%
+ora_fdr2016 <- ora_arranged2016 %>%
   filter(p.adjust < 0.05)
 
 ```
@@ -154,11 +147,13 @@ ora_fdr2023 <- ora_arranged %>%
 
 ```{r output_table}
 
-ora_fdr2023 %>%
+ora_fdr2016 %>%
   kbl(caption="Genes and GO Terms identified, FDR &lt; 0.05") %>%
   kable_paper("hover", full_width = F)
 
 ```
+
+For complete list of results:
 
 ```{r complete_results, results='asis', echo=FALSE}
 
@@ -166,7 +161,7 @@ HEADER=paste("<br><details><summary><b>","Click HERE to show results for all gen
  
 cat(HEADER)
  
-kbl(ora_arranged, format="html", row.names=FALSE, caption = "Complete results",digits=100) %>%
+kbl(ora_arranged2016, format="html", row.names=FALSE, caption = "Complete results",digits=100) %>%
 kable_styling("hover", full_width = FALSE)
  
 cat("<br></p></details>")
@@ -193,8 +188,9 @@ cat("<hr><br>")
 
 ```{r save_object}
 
-saveRDS(ora_arranged, file = "ora_arranged2023.RDS")
-saveRDS(ora_fdr2023, file = "ora_fdr2023.RDS")
+#saveRDS(ora_arranged2016, file = "ora.RDS")
+saveRDS(ora_arranged2016, file = "ora_arranged2016.RDS")
+saveRDS(ora_fdr2016, file = "ora_fdr2016.RDS")
 # z <- readRDS("ora.RDS")  #To read RDS 
 
 ```

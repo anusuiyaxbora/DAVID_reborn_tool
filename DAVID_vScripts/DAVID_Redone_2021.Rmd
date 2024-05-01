@@ -8,7 +8,7 @@ output:
 date: "2024-05-01"
 ---
 
-### This is for DAVID 2023 - quarter 4 version
+### This is for DAVID 2021 (May-June 2022, before it got updated to latest versions)
 
 ### Methodology:
 1. Loading libraries
@@ -34,11 +34,6 @@ library("ggplot2")
 
 genelist <- read.csv("../input_lists/PMC6587650.csv")
 
-# getwd()
-# setwd ("..")
-#genelist <- "PMC6587650.csv"
-#genelist <- read.csv("PMC6587650.csv")
-
 Genevec <- genelist[, 1]
 
 ```
@@ -47,37 +42,25 @@ Genevec <- genelist[, 1]
 
 ```{r include=FALSE, echo=FALSE, load_GORDS}
 
-
-gobp_2023 <- readRDS("../go_gaf_datasets/go2023q4/GO_bp_2023q4.Rds")
-
-# getwd()
-# setwd(..) 
-
-gomf_2023 <- readRDS("../go_gaf_datasets/go2023q4/GO_mf_2023q4.Rds")
-
-gocc_2023 <- readRDS("../go_gaf_datasets/go2023q4/GO_cc_2023q4.Rds")
-
-gocombined_2023 <- readRDS("../go_gaf_datasets/go2023q4/GO_combined_2023q4.Rds")
-
-# gobp <- rio::import(here::here("Data", "GO_dataset", "GObp.rds"))
-# gocc <- rio::import(here::here("Data", "GO_dataset", "GOcc.rds"))
-# gomf <- rio::import(here::here("Data", "GO_dataset", "GOmf.rds"))
-# gocombined <- rio::import(here::here("Data", "GO_dataset", "GOcombined.rds"))
+gobp2021 <- readRDS("../go_gaf_datasets/go2021/GO_bp_2021.Rds")
+gocc2021 <- readRDS("../go_gaf_datasets/go2021/GO_cc_2021.Rds")
+gomf2021 <- readRDS("../go_gaf_datasets/go2021/GO_mf_2021.Rds")
+gocombined2021 <- readRDS("../go_gaf_datasets/go2021/GO_combined_2021.Rds")
 
 ```
 
 
 ```{r include=FALSE, echo=FALSE, converting_RDS2gmt}
-gobp_terms <- rev(stack(gobp_2023))
+gobp_terms <- rev(stack(gobp2021))
 str(gobp_terms)
 
-gocc_terms <- rev(stack(gocc_2023))
+gocc_terms <- rev(stack(gocc2021))
 str(gocc_terms)
 
-gomf_terms <- rev(stack(gomf_2023))
+gomf_terms <- rev(stack(gomf2021))
 str(gomf_terms)
 
-gocombined_terms <- rev(stack(gocombined_2023))
+gocombined_terms <- rev(stack(gocombined2021))
 str(gocombined_terms)
 
 #goterms <- rev(stack(golist))
@@ -133,10 +116,10 @@ ora_new <- cbind(ora, gr, br, es)
 
 names(ora_new)[names(ora_new) == "es"] <- "EnrichmentScore"
 
-ora_arranged <- ora_new %>%  #ora_arranged naming done after pathways were arranged from ascending order of FDR 
+ora_arranged2021 <- ora_new %>% 
   arrange(p.adjust)
 
-head(ora_arranged)
+head(ora_arranged2021)
 
 
 ```
@@ -145,7 +128,7 @@ head(ora_arranged)
 
 ```{r pathways_FDR}
 
-ora_fdr2023 <- ora_arranged %>%
+ora_fdr2021 <- ora_arranged2021 %>%
   filter(p.adjust < 0.05)
 
 ```
@@ -154,7 +137,7 @@ ora_fdr2023 <- ora_arranged %>%
 
 ```{r output_table}
 
-ora_fdr2023 %>%
+ora_fdr2021 %>%
   kbl(caption="Genes and GO Terms identified, FDR &lt; 0.05") %>%
   kable_paper("hover", full_width = F)
 
@@ -166,7 +149,7 @@ HEADER=paste("<br><details><summary><b>","Click HERE to show results for all gen
  
 cat(HEADER)
  
-kbl(ora_arranged, format="html", row.names=FALSE, caption = "Complete results",digits=100) %>%
+kbl(ora_arranged2021, format="html", row.names=FALSE, caption = "Complete results",digits=100) %>%
 kable_styling("hover", full_width = FALSE)
  
 cat("<br></p></details>")
@@ -174,27 +157,13 @@ cat("<hr><br>")
 
 ```
 
-```{r pie_chart}
-
-# aggregate_data <- aggregate(EnrichmentScore ~ Description, data = ora_fdr, FUN = sum)
-
-# Create a pie chart
-# pie(aggregate_data$EnrichmentScore, labels = aggregate_data$Description)
-
-# ggplot(ora_fdr, aes(x = "", y = Description, fill = EnrichmentScore)) +
-#  geom_bar(stat = "identity") +
-#  coord_polar(theta = "y") +
-#  labs(title = "Pie Chart for enriched terms", fill = "EnrichmentScore", y = NULL) +
-#  theme_minimal()
-
-```
 
 ### Save object
 
 ```{r save_object}
 
-saveRDS(ora_arranged, file = "ora_arranged2023.RDS")
-saveRDS(ora_fdr2023, file = "ora_fdr2023.RDS")
+saveRDS(ora_arranged2021, file = "ora_arranged2021.RDS")
+saveRDS(ora_fdr2021, file = "ora_fdr2021.RDS")
 # z <- readRDS("ora.RDS")  #To read RDS 
 
 ```

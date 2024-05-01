@@ -1,0 +1,90 @@
+---
+title: "Comparison_Script"
+author: "Anusuiya Bora; s222331482@deakin.edu.au"
+date: "2024-04-24"
+Last updated: "2024-05-01"
+output: html_document
+
+---
+
+## Loading libraries:
+
+``` {r libraries}
+
+library("knitr")
+library("kableExtra")
+library("tidyverse")
+
+```
+
+## DAVID Results from the web-tool (2023q4): 
+
+```{r setup, DAVID results}
+
+PMC6587650_results <- read.table("../output_lists/DAVIDResults24April.txt", header = TRUE, sep = "\t")
+
+head(PMC6587650_results)
+
+PMC6587650_results %>%
+  kbl(caption="Results from the DAVID Website") %>%
+  kable_paper("hover", full_width = F)
+
+```
+
+
+## DAVID Results from our R script/DAVID Reborn Tool:
+
+``` {r DAVID_Reborn results}
+
+script_results <- readRDS("../DAVID_vScripts/ora_fdr2023.RDS")
+
+head(script_results)
+
+script_results %>%
+  kbl(caption="Results from DAVID Reborn Tool, FDR &lt; 0.05") %>%
+  kable_paper("hover", full_width = F)
+
+```
+
+## Comparing results from the web-server and our R script: 
+
+``` {r comparison}
+
+# From DAVID webserver table output: 
+
+DAVID_webserver <- PMC6587650_results %>% 
+  slice(1:20) %>%
+  select(Term, Count, PValue, Fold.Enrichment, FDR)
+
+
+DAVID_reborn <- script_results %>% 
+  slice(1:20) %>%
+  select(S_No, Description, GeneRatio, pvalue, p.adjust, EnrichmentScore)
+
+table1 <- DAVID_webserver %>%
+  kable("html") %>%
+  kable_styling()
+
+table2 <- DAVID_reborn %>%
+  kable("html") %>%
+  kable_styling()
+
+# Combine tables side by side
+combined_table <- cbind(table1, table2)
+
+# Print combined table
+combined_table
+
+```
+
+``` {r }
+kable(DAVID_webserver, "html") %>%
+  kable_styling(full_width = FALSE) %>%
+  column_spec(3, width = "200px")  # Adjust width as needed
+
+kable(DAVID_reborn, "html") %>%
+ kable_styling(full_width = FALSE) %>%
+  column_spec(3, width = "200px") 
+
+```
+

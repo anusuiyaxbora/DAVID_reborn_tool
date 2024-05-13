@@ -2,10 +2,11 @@
 title: "Comparison_Script"
 author: "Anusuiya Bora; s222331482@deakin.edu.au"
 date: "2024-04-24"
-Last updated: "2024-05-01"
+Last updated: "2024-05-08"
 output: html_document
 
 ---
+## For PMID33947848
 
 ## Loading libraries:
 
@@ -14,6 +15,8 @@ output: html_document
 library("knitr")
 library("kableExtra")
 library("tidyverse")
+library("stringr")
+library("tidyr")
 
 ```
 
@@ -21,13 +24,28 @@ library("tidyverse")
 
 ```{r setup, DAVID results}
 
-PMC6587650_results <- read.table("../output_lists/DAVIDResults24April.txt", header = TRUE, sep = "\t")
+# PMC6587650_results <- read.table("../output_lists/DAVIDResults24April.txt", header = TRUE, sep = "\t")  #Change PMID/PMCID
 
-head(PMC6587650_results)
+PMID33947848_results <- read.table("../output_lists/DAVID_PMID33947848_2.txt", header = TRUE, sep = "\t")  #Change PMID/PMCID
 
-PMC6587650_results %>%
+# head(PMC6587650_results)
+
+split_terms <- str_split(PMID33947848_results$Term, pattern = "~")
+
+PMID33947848_results$GOID <- sapply(split_terms, "[", 1)
+PMID33947848_results$GO.Term <- sapply(split_terms, "[", 2)
+
+PMID33947848_results <- select(PMID33947848_results, GOID, GO.Term, Category, Count, X., PValue, Genes, List.Total, Pop.Hits, Pop.Total, Fold.Enrichment, Bonferroni, Benjamini, FDR)
+
+PMID33947848_results %>%      #Change PMID/PMCID
   kbl(caption="Results from the DAVID Website") %>%
   kable_paper("hover", full_width = F)
+
+#PMID33947848_results <- PMID33947848_results[, c("GOID", "GO.Term", "Category", "Count", "X", "PValue", "Genes", "List.Total", "Pop.Hits", "Pop.Total", "Fold.Enrichment", "Bonferroni", "Benjamini", "FDR" )]
+
+#df <- select(df, col2, col3, col1)
+
+
 
 ```
 
@@ -36,9 +54,47 @@ PMC6587650_results %>%
 
 ``` {r DAVID_Reborn results}
 
-script_results <- readRDS("../DAVID_vScripts/ora_fdr2023.RDS")
+script_results <- readRDS("../DAVID_vScripts/ora_arranged2023.RDS")
 
 head(script_results)
+
+script_results$GOID <- sapply(script_results$Description, function(term) strsplit(term, " ")[[1]][1])
+
+script_results$GO.Term <- sapply(script_results$Description, function(term) paste(strsplit(term, " ")[[1]][-1], collapse = " "))
+
+#Try this out:
+#split_terms2 <- str_split(script_results$Description, pattern = " ")
+
+#script_results$GOID <- sapply(split_terms, "[", 1)
+#script_results$GO.Term <- sapply(split_terms, "[", 2)
+
+#script_split <- function(x) { # Split the string by space
+#  terms <- strsplit(x, " ")[[1]]
+  
+# If there are more than two terms
+#    if(length(terms) > 2) {   # Combine the first two terms with a space
+#    term1 <- paste(terms[1], sep = " ")   # Concatenate the remaining terms
+#    term2 <- paste(terms[2:length(terms)], collapse = " ")
+#  } else {
+#    term1 <- terms[1]
+#    term2 <- terms[2]
+#  }
+  
+#  return(list(term1 = term1, term2 = term2)) }
+
+# split_columns <- t(sapply(script_results$Description, script_split))
+
+# Create new columns for the extracted terms
+# script_results$GOID <- split_columns[, "term1"]
+# script_results$GO.Term <- split_columns[, "term2"]
+
+
+script_results <- select(script_results, S_No, GOID, GO.Term, GeneRatio, BgRatio, pvalue, p.adjust, qvalue, geneID, Count, gr, br, EnrichmentScore)
+
+#PMID33947848_results %>%      #Change PMID/PMCID
+#  kbl(caption="Results from the DAVID Website") %>%
+#  kable_paper("hover", full_width = F)
+
 
 script_results %>%
   kbl(caption="Results from DAVID Reborn Tool, FDR &lt; 0.05") %>%
@@ -52,28 +108,48 @@ script_results %>%
 
 # From DAVID webserver table output: 
 
-DAVID_webserver <- PMC6587650_results %>% 
-  slice(1:20) %>%
-  select(Term, Count, PValue, Fold.Enrichment, FDR)
+
+#web_split <- sapply(strsplit(PMID33947848_results$Term,"~"),"[[",1)
+
+#webserver_new <- cbind(web_split)
+
+DAVID_webserver <- PMID33947848_results %>% #Change PMID/PMCID
+  slice(1:40) %>%
+  select(GOID, Count, PValue, Fold.Enrichment, FDR)
 
 
 DAVID_reborn <- script_results %>% 
-  slice(1:20) %>%
-  select(S_No, Description, GeneRatio, pvalue, p.adjust, EnrichmentScore)
+  slice(1:40) %>%
+  select(S_No, GOID, GO.Term, GeneRatio, pvalue, p.adjust, EnrichmentScore)
 
-table1 <- DAVID_webserver %>%
-  kable("html") %>%
-  kable_styling()
 
-table2 <- DAVID_reborn %>%
-  kable("html") %>%
-  kable_styling()
+# DAVID_reborn <- data.frame(GOID = 1:20,
+#                 Value1 = rep(c("A", "B", "C"), length.out = 20),
+#                 ListColumn = replicate(20, list(sample(letters, size = sample(1:5)))))
+
+# Convert the list column to character vectors
+#DAVID_reborn$GOID <- lapply(DAVID_reborn$GOID, function(x) paste(x, collapse = ","))
+
+
+#table1 <- DAVID_webserver %>%
+#  kable("html") %>%
+#  kable_styling()
+
+#table2 <- DAVID_reborn %>%
+#  kable("html") %>%
+#  kable_styling()
 
 # Combine tables side by side
-combined_table <- cbind(table1, table2)
+combined_table <- cbind(DAVID_webserver, DAVID_reborn)
+
+#  combined_table <- cbind(table1, table2)
 
 # Print combined table
 combined_table
+
+
+comparison_table <- merge(DAVID_webserver, DAVID_reborn, by = "GOID", all = TRUE)
+comparison_table
 
 ```
 
@@ -86,5 +162,12 @@ kable(DAVID_reborn, "html") %>%
  kable_styling(full_width = FALSE) %>%
   column_spec(3, width = "200px") 
 
+kable(comparison_table, "html") %>%
+ kable_styling(full_width = FALSE) %>%
+  column_spec(3, width = "200px") 
+
+comparison_table %>%
+  kbl(caption= "Results from DAVID Website and DAVID Reborn Tool for comparison") %>%  kable_paper("hover", full_width = F)
+  
 ```
 

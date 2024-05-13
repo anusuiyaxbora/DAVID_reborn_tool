@@ -32,12 +32,12 @@ library("ggplot2")
 
 #genelist_path <- "~/Projects/DAVID_Reborn/Data/input_genelist"
 
-genelist <- read.csv("../input_lists/PMC6587650.csv")
+# genelist <- read.csv("../input_lists/PMC6587650.csv")  #gene list of PMC6587650.csv
+
+genelist <- read.table("../input_lists/PMID33947848_genes.txt")
 
 # getwd()
 # setwd ("..")
-#genelist <- "PMC6587650.csv"
-#genelist <- read.csv("PMC6587650.csv")
 
 Genevec <- genelist[, 1]
 
@@ -133,10 +133,10 @@ ora_new <- cbind(ora, gr, br, es)
 
 names(ora_new)[names(ora_new) == "es"] <- "EnrichmentScore"
 
-ora_arranged <- ora_new %>%  #ora_arranged naming done after pathways were arranged from ascending order of FDR 
+ora_arranged2023 <- ora_new %>%  #ora_arranged naming done after pathways were arranged from ascending order of FDR 
   arrange(p.adjust)
 
-head(ora_arranged)
+head(ora_arranged2023)
 
 
 ```
@@ -145,8 +145,8 @@ head(ora_arranged)
 
 ```{r pathways_FDR}
 
-ora_fdr2023 <- ora_arranged %>%
-  filter(p.adjust < 0.05)
+#ora_fdr2023 <- ora_arranged %>%
+#  filter(p.adjust < 0.05)
 
 ```
 
@@ -154,7 +154,7 @@ ora_fdr2023 <- ora_arranged %>%
 
 ```{r output_table}
 
-ora_fdr2023 %>%
+ora_arranged2023 %>%
   kbl(caption="Genes and GO Terms identified, FDR &lt; 0.05") %>%
   kable_paper("hover", full_width = F)
 
@@ -166,7 +166,7 @@ HEADER=paste("<br><details><summary><b>","Click HERE to show results for all gen
  
 cat(HEADER)
  
-kbl(ora_arranged, format="html", row.names=FALSE, caption = "Complete results",digits=100) %>%
+kbl(ora_arranged2023, format="html", row.names=FALSE, caption = "Complete results",digits=100) %>%
 kable_styling("hover", full_width = FALSE)
  
 cat("<br></p></details>")
@@ -193,8 +193,8 @@ cat("<hr><br>")
 
 ```{r save_object}
 
-saveRDS(ora_arranged, file = "ora_arranged2023.RDS")
-saveRDS(ora_fdr2023, file = "ora_fdr2023.RDS")
+saveRDS(ora_arranged2023, file = "ora_arranged2023.RDS")
+#saveRDS(ora_fdr2023, file = "ora_fdr2023.RDS")
 # z <- readRDS("ora.RDS")  #To read RDS 
 
 ```

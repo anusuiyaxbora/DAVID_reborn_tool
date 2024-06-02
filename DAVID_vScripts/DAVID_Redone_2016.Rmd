@@ -1,19 +1,21 @@
 ---
 title: "DAVID Redone Code"
 author: "Anusuiya Bora; s222331482@deakin.edu.au"
-#output: html_document
-output: 
+output:
   html_document:
-    code_folding: show 
-date: "2024-05-01"
+    toc: true
+    toc_float: true
+    fig_width: 7
+    fig_height: 7
+theme: cosmo
+date: "`r Sys.Date()`"
 ---
 
-### This is for DAVID 2016 (6.8 version) 
+## This is for DAVID 2016 (6.8 version) 
 
-### Methodology:
-1. Loading libraries
+### Loading libraries
 
-```{r loading_libraries}
+```{r, loading_libraries}
 
 library("clusterProfiler")
 library("kableExtra")
@@ -26,41 +28,33 @@ library("ggplot2")
 ```
 
 
-2) Input gene list:
+### Input gene list:
 
-``` {r loading_input_genes}
+``` {r, loading_input_genes}
 
-#genelist_path <- "~/Projects/DAVID_Reborn/Data/input_genelist"
+genelist <- read.table("../input_lists/PMID36259947_genes.txt")
 
-genelist <- read.csv("../input_lists/PMC6587650.csv")
-
-getwd() 
-setwd("..")
-#genelist <- "PMC6587650.csv"
-#genelist <- read.csv("PMC6587650.csv")
+#getwd() 
+#setwd("..")
 
 Genevec <- genelist[, 1]
 
 ```
 
-3) Loading GO datsets
+### Loading GO datsets
 
-```{r include=FALSE, echo=FALSE, load_GORDS}
+```{r, include=FALSE, echo=FALSE, load_GORDS}
 
 gobp2016 <- readRDS("../go_gaf_datasets/go2016/GObp.rds")
 gocc2016 <- readRDS("../go_gaf_datasets/go2016/GOcc.rds")
 gomf2016 <- readRDS("../go_gaf_datasets/go2016/GOmf.rds")
 gocombined2016 <- readRDS("../go_gaf_datasets/go2016/GOcombined.rds")
 
-#gobp <- rio::import(here::here("Data", "GO_dataset", "GObp.rds"))
-#gocc <- rio::import(here::here("Data", "GO_dataset", "GOcc.rds"))
-#gomf <- rio::import(here::here("Data", "GO_dataset", "GOmf.rds"))
-#gocombined <- rio::import(here::here("Data", "GO_dataset", "GOcombined.rds"))
-
 ```
 
+### Convert gene lists to dataframe for clusterprofiler
 
-```{r include=FALSE, echo=FALSE, converting_RDS2gmt}
+```{r, include=FALSE, echo=FALSE, converting_RDS2gmt}
 gobp_terms <- rev(stack(gobp2016))
 str(gobp_terms)
 
@@ -73,29 +67,25 @@ str(gomf_terms)
 gocombined_terms <- rev(stack(gocombined2016))
 str(gocombined_terms)
 
-#goterms <- rev(stack(golist))
-#str(goterms)
-
 ```
 
-5) Performing Enrichment analysis
+### Performing Enrichment analysis
 
-```{r include=T, echo=T, enricher_code}
+for TERM2GENE, options are: gobp_terms, gocc_terms, gomf_terms, gocombined_terms
+
+```{r, include=T, echo=T, enricher_code}
 ora <- as.data.frame(enricher(gene = Genevec ,
                               minGSSize = 10,
                               maxGSSize = 50000, 
-                              TERM2GENE = gocombined_terms, #for TERM2GENE, options are: gobp_terms, gocc_terms, gomf_terms, gocombined_terms
+                              TERM2GENE = gocombined_terms, 
                               pAdjustMethod="fdr",  
                               pvalueCutoff = 1, 
                               qvalueCutoff = 1  ))
 
-x <- gsub("/", " ", ora$geneID) #to separate geneIds from /
-
-head(x)
+ora$geneID <- gsub("/", " ", ora$geneID) #to separate geneIds from /
 
 dim(ora)
 
-ora$geneID <- x
 
 ora$ID <- NULL
 rownames(ora) <- NULL #removing empty 1st column name
@@ -107,10 +97,31 @@ head(ora)
 
 ```
 
+Now test the presence of a few gene sets.
 
-6) Calculating enrichment scores
+GO:0001654
 
-``` {r include=FALSE, echo=FALSE, ES_calculation}
+GO:0001764
+
+GO:0002682
+
+```{r,test1}
+
+# collect reference sets
+GO0001654 <- gocombined_terms[grep("GO:0001654",gocombined_terms$ind),2]
+GO0001764 <- gocombined_terms[grep("GO:0001764",gocombined_terms$ind),2]
+GO0002682 <- gocombined_terms[grep("GO:0002682",gocombined_terms$ind),2]
+
+# intersect with input list
+length(which(GO0001654 %in% Genevec))
+length(which(GO0001764 %in% Genevec))
+length(which(GO0002682 %in% Genevec))
+
+```
+
+### Calculating enrichment scores
+
+``` {r, include=FALSE, echo=FALSE, ES_calculation}
 
 ora$gene <- NULL
 
@@ -126,71 +137,60 @@ ora_new <- cbind(ora, gr, br, es)
 
 names(ora_new)[names(ora_new) == "es"] <- "EnrichmentScore"
 
-ora_arranged2016 <- ora_new %>% 
+ora_arranged2016 <- ora_new %>%  #ora_arranged naming done after pathways were arranged from ascending order of FDR 
   arrange(p.adjust)
 
 head(ora_arranged2016)
 
+#ora_arranged2016 <- ora_new %>% 
+#  arrange(p.adjust)
+
+#head(ora_arranged2016)
+
 
 ```
 
-7) Selecting pathways with FDR<0.05
+### Selecting pathways with FDR<0.05
 
-```{r pathways_FDR}
+```{r, pathways_FDR}
 
-ora_fdr2016 <- ora_arranged2016 %>%
-  filter(p.adjust < 0.05)
+#ora_fdr2016 <- ora_arranged2016 %>%
+#  filter(p.adjust < 0.05)
 
 ```
 
+### Top table
 
+```{r,output_table}
 
-```{r output_table}
-
-ora_fdr2016 %>%
-  kbl(caption="Genes and GO Terms identified, FDR &lt; 0.05") %>%
+head(ora_arranged2016,50) %>%
+  kbl(caption="Top 50 GO Terms identified") %>%
   kable_paper("hover", full_width = F)
 
 ```
 
-For complete list of results:
-
-```{r complete_results, results='asis', echo=FALSE}
+```{r,complete_results, results='asis', echo=FALSE}
 
 HEADER=paste("<br><details><summary><b>","Click HERE to show results for all gene sets","</b></summary><br><p>",sep=" " )
- 
+
 cat(HEADER)
- 
+
 kbl(ora_arranged2016, format="html", row.names=FALSE, caption = "Complete results",digits=100) %>%
 kable_styling("hover", full_width = FALSE)
- 
+
 cat("<br></p></details>")
 cat("<hr><br>")
 
 ```
 
-```{r pie_chart}
-
-# aggregate_data <- aggregate(EnrichmentScore ~ Description, data = ora_fdr, FUN = sum)
-
-# Create a pie chart
-# pie(aggregate_data$EnrichmentScore, labels = aggregate_data$Description)
-
-# ggplot(ora_fdr, aes(x = "", y = Description, fill = EnrichmentScore)) +
-#  geom_bar(stat = "identity") +
-#  coord_polar(theta = "y") +
-#  labs(title = "Pie Chart for enriched terms", fill = "EnrichmentScore", y = NULL) +
-#  theme_minimal()
-
-```
 
 ### Save object
 
-```{r save_object}
+```{r, save_object}
 
 #saveRDS(ora_arranged2016, file = "ora.RDS")
 saveRDS(ora_arranged2016, file = "ora_arranged2016.RDS")
-saveRDS(ora_fdr2016, file = "ora_fdr2016.RDS")
+#saveRDS(ora_fdr2016, file = "ora_fdr2016.RDS")
 # z <- readRDS("ora.RDS")  #To read RDS 
 
 ```

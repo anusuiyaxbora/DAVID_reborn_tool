@@ -4,7 +4,7 @@ author: "Anusuiya Bora; s222331482@deakin.edu.au"
 output:
   html_document:
     code_folding: show
-date: "2024-05-01"
+date: "`r Sys.Date()`"
 ---
 
 This is for DAVID 2023 - quarter 4 version
@@ -28,7 +28,7 @@ library("ggplot2")
 
 ```{r,loading_input_genes}
 
-Genevec <- read.table("../input_lists/PMID33947848_genes.txt")[,1]
+Genevec <- read.table("../input_lists/PMID36259947_genes.txt")[,1]
 
 ```
 

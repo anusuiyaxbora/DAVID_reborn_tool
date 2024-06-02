@@ -1,0 +1,218 @@
+---
+title: "Comparison_Script"
+author: "Anusuiya Bora; s222331482@deakin.edu.au"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    fig_width: 7
+    fig_height: 7
+theme: cosmo
+---
+
+## For PMID36259947 using DAVID2023q4
+
+### Loading libraries:
+
+```{r, libraries}
+
+library("knitr")
+library("kableExtra")
+library("tidyverse")
+library("stringr")
+library("tidyr")
+library("eulerr")
+
+```
+
+### DAVID Results from the web-tool (2023q4):
+
+```{r, setupDAVIDresults}
+
+DAVIDweb_results <- read.table("../output_lists/PMID36259947_results.txt", header = TRUE, sep = "\t")  #Change PMID/PMCID
+
+#PMID36259947_results <- read.csv("../output_lists/PMID33947848_webDAVID_20240513.tsv", header = TRUE, sep = "\t")
+
+split_terms <- str_split(DAVIDweb_results$Term, pattern = "~")
+
+DAVIDweb_results$GOID <- sapply(split_terms, "[", 1)
+DAVIDweb_results$GO.Term <- sapply(split_terms, "[", 2)
+
+DAVIDweb_results <- select(DAVIDweb_results, GOID, GO.Term, Category, Count, X., PValue, Genes, List.Total, Pop.Hits, Pop.Total, Fold.Enrichment, Bonferroni, Benjamini, FDR)
+
+tmp <- DAVIDweb_results
+tmp$Genes=NULL
+
+head(tmp,50) %>%      #Change PMID/PMCID
+  kbl(caption="Top results from the DAVID Website") %>%
+  kable_paper("hover", full_width = F)
+
+```
+
+### DAVID Results from our R script/DAVID Reborn Tool:
+
+```{r DAVID_Reborn results}
+
+script_results <- readRDS("../DAVID_vScripts/ora_arranged2023.RDS")
+
+script_results$GOID <- sapply(script_results$Description, function(term) strsplit(term, " ")[[1]][1])
+
+script_results$GO.Term <- sapply(script_results$Description, function(term) paste(strsplit(term, " ")[[1]][-1], collapse = " "))
+
+script_results <- select(script_results, S_No, GOID, GO.Term, GeneRatio, BgRatio, pvalue, p.adjust, qvalue, geneID, Count, gr, br, EnrichmentScore)
+
+# minimum of 2 genes
+#script_results <- subset(script_results,Count >=2 )
+
+tmp <- script_results
+tmp$geneID=NULL
+
+head(tmp,50) %>%
+  kbl(caption="Top results from DAVID Reborn Tool") %>%
+  kable_paper("hover", full_width = F)
+
+```
+
+## Compare the genes that are recognised in both analyses
+
+Extract the gene lists from the results of the web tool and the reborn tool to see where genes are being exluded.
+
+```{r,geneoverlap1}
+
+web_genes <- unique(gsub(" ","",unlist(strsplit(DAVIDweb_results$Genes,","))))
+web_genes <- sort(web_genes)
+str(web_genes)
+#481 genes
+
+script_genes <- unique(unlist(strsplit(script_results$geneID," ")))
+script_genes <- sort(script_genes)
+str(script_genes)
+# 499 genes looks right
+
+v1 <- list("web"=web_genes,"script"=script_genes)
+
+plot(euler(v1),quantities = list(cex = 1.0), labels = list(cex = 1.5))
+
+message("Genes unique to web")
+setdiff(web_genes,script_genes)
+
+message("Genes unique to script")
+setdiff(script_genes, web_genes)
+
+```
+
+## Comparing results from the web-server and our R script:
+
+```{r,comparison1}
+
+# From DAVID webserver table output: 
+#web_split <- sapply(strsplit(PMID33947848_results$Term,"~"),"[[",1)
+
+DAVID_webserver <- DAVIDweb_results %>% #Change PMID/PMCID
+  select(GOID, Count, PValue, Fold.Enrichment, FDR)
+
+DAVID_reborn <- script_results %>%
+  select(S_No, GOID, GO.Term, GeneRatio, pvalue, p.adjust, Count ,EnrichmentScore)
+
+comparison_table <- merge(DAVID_webserver, DAVID_reborn, by = "GOID", all = TRUE)
+
+comparison_table <- comparison_table[order(comparison_table$PValue),]
+
+comparison_table$geneID=NULL
+
+head(comparison_table,50) %>%
+  kbl(caption="Top replication results") %>%
+  kable_paper("hover", full_width = F)
+
+```
+
+Compare p-values directly.
+
+```{r,comparison2}
+
+comparison_table$pvaluediff <- abs((comparison_table$PValue) - (comparison_table$pvalue))
+
+hist( comparison_table$pvaluediff / (comparison_table$PValue) )
+
+table( comparison_table$pvaluediff / (comparison_table$PValue) < 0.5)
+
+comparison_table$pvaluecheck  <-  comparison_table$pvaluediff / (comparison_table$PValue) < 0.5
+
+```
+
+Compare adjusted p-values directly.
+
+```{r,comparison3}
+
+comparison_table$fdrdiff <- abs(-log10(comparison_table$FDR) - -log10(comparison_table$p.adjust))
+
+hist( comparison_table$fdrdiff / -log10(comparison_table$FDR) )
+
+table(comparison_table$fdrdiff / -log10(comparison_table$FDR) < 1)
+
+comparison_table$fdrcheck  <- comparison_table$fdrdiff / -log10(comparison_table$FDR) < 1
+
+```
+
+Compare fold enrichments directly.
+
+```{r,comparison4}
+
+comparison_table$folddiff <- abs( comparison_table$Fold.Enrichment - comparison_table$EnrichmentScore)
+
+hist( comparison_table$folddiff / comparison_table$Fold.Enrichment )
+
+table( comparison_table$folddiff / comparison_table$Fold.Enrichment <0.3)
+
+comparison_table$foldcheck  <- comparison_table$folddiff / comparison_table$Fold.Enrichment <0.3
+
+```
+
+Now look at the significant sets and see if they classify as replicated.
+
+```{r,comparison5}
+
+sig <- subset(comparison_table, FDR <0.05)
+
+repro <- subset(sig, pvaluecheck == "TRUE")
+
+#repro <- subset(sig, fdrcheck == "TRUE" & foldcheck == "TRUE")
+
+notrepro <- subset(sig, pvaluecheck != "TRUE")
+
+message("No. significant results from paper")
+nrow(sig)
+
+message("No. replicated results")
+nrow(repro)
+
+message("No. non-replicated results")
+nrow(notrepro)
+
+message("Success rate")
+nrow(repro) / nrow(sig)
+
+```
+
+```{r,tables}
+
+head(repro,50) %>%
+  kbl(caption="Top reproduced results") %>%
+  kable_paper("hover", full_width = F)
+
+head(notrepro,50) %>%
+  kbl(caption="Top un-reproduced results") %>%
+  kable_paper("hover", full_width = F)
+
+```
+
+## Session information
+
+For reproducibility
+
+```{r,session}
+
+sessionInfo()
+
+```

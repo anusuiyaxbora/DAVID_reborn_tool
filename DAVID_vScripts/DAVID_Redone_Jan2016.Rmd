@@ -1,0 +1,210 @@
+---
+title: "DAVID Redone Code"
+author: "Anusuiya Bora; s222331482@deakin.edu.au"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    fig_width: 7
+    fig_height: 7
+theme: cosmo
+date: "`r Sys.Date()`"
+---
+
+## This is for DAVID 2016 (6.8 version) - Jan 2016
+
+### Loading libraries
+
+```{r, loading_libraries}
+
+library("clusterProfiler")
+library("kableExtra")
+library("dplyr")
+library("rio")
+library("here")
+library("gtsummary")
+library("ggplot2")
+
+```
+
+
+### Input gene list:
+
+``` {r, loading_input_genes}
+
+genelist <- read.table("../input_lists/PMID36259947_genes.txt")
+
+#getwd() 
+#setwd("..")
+
+Genevec <- genelist[, 1]
+
+```
+
+### Loading GO datsets
+
+```{r, include=FALSE, echo=FALSE, load_GORDS}
+
+#gobp2016 <- readRDS("../go_gaf_datasets/go2016/GObp.rds")
+#gocc2016 <- readRDS("../go_gaf_datasets/go2016/GOcc.rds")
+#gomf2016 <- readRDS("../go_gaf_datasets/go2016/GOmf.rds")
+#gocombined2016 <- readRDS("../go_gaf_datasets/go2016/GOcombined.rds")
+
+go2016_Jan <- readRDS("../go_gaf_datasets/go2016Jan/go_2016_jan/human_go.Rds")
+```
+
+### Convert gene lists to dataframe for clusterprofiler
+
+```{r, include=FALSE, echo=FALSE, converting_RDS2gmt}
+#gobp_terms <- rev(stack(gobp2016))
+#str(gobp_terms)
+
+#gocc_terms <- rev(stack(gocc2016))
+#str(gocc_terms)
+
+#gomf_terms <- rev(stack(gomf2016))
+#str(gomf_terms)
+
+#gocombined_terms <- rev(stack(gocombined2016))
+#str(gocombined_terms)
+
+goJan2016_terms <- rev(stack(go2016_Jan))
+str(goJan2016_terms)
+
+```
+
+### Performing Enrichment analysis
+
+for TERM2GENE, options are: gobp_terms, gocc_terms, gomf_terms, gocombined_terms
+
+```{r, include=T, echo=T, enricher_code}
+ora <- as.data.frame(enricher(gene = Genevec ,
+                              minGSSize = 10,
+                              maxGSSize = 50000, 
+                              TERM2GENE = goJan2016_terms, 
+                              pAdjustMethod="fdr",  
+                              pvalueCutoff = 1, 
+                              qvalueCutoff = 1  ))
+
+ora$geneID <- gsub("/", " ", ora$geneID) #to separate geneIds from /
+
+dim(ora)
+
+
+ora$ID <- NULL
+rownames(ora) <- NULL #removing empty 1st column name
+
+ora$S_No <- seq_len(nrow(ora))
+ora <- ora[, c("S_No", names(ora)[-which(names(ora) == "S_No")])]
+
+head(ora)
+
+```
+
+Now test the presence of a few gene sets.
+
+GO:0001654
+
+GO:0001764
+
+GO:0002682
+
+```{r,test1}
+
+# collect reference sets
+GO0001654 <- goJan2016_terms[grep("GO:0001654",goJan2016_terms$ind),2]
+GO0001764 <- goJan2016_terms[grep("GO:0001764",goJan2016_terms$ind),2]
+GO0002682 <- goJan2016_terms[grep("GO:0002682",goJan2016_terms$ind),2]
+
+# intersect with input list
+length(which(GO0001654 %in% Genevec))
+length(which(GO0001764 %in% Genevec))
+length(which(GO0002682 %in% Genevec))
+
+```
+
+### Calculating enrichment scores
+
+``` {r, include=FALSE, echo=FALSE, ES_calculation}
+
+ora$gene <- NULL
+
+gr <- as.numeric(sapply(strsplit(ora$GeneRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora$GeneRatio,"/"),"[[",2))
+
+br <- as.numeric(sapply(strsplit(ora$BgRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora$BgRatio,"/"),"[[",2))
+
+es <- gr/br
+
+ora_new <- cbind(ora, gr, br, es)
+
+names(ora_new)[names(ora_new) == "es"] <- "EnrichmentScore"
+
+ora_arranged2016 <- ora_new %>%  #ora_arranged naming done after pathways were arranged from ascending order of FDR 
+  arrange(p.adjust)
+
+head(ora_arranged2016)
+
+#ora_arranged2016 <- ora_new %>% 
+#  arrange(p.adjust)
+
+#head(ora_arranged2016)
+
+
+```
+
+### Selecting pathways with FDR<0.05
+
+```{r, pathways_FDR}
+
+#ora_fdr2016 <- ora_arranged2016 %>%
+#  filter(p.adjust < 0.05)
+
+```
+
+### Top table
+
+```{r,output_table}
+
+head(ora_arranged2016,50) %>%
+  kbl(caption="Top 50 GO Terms identified") %>%
+  kable_paper("hover", full_width = F)
+
+```
+
+```{r,complete_results, results='asis', echo=FALSE}
+
+HEADER=paste("<br><details><summary><b>","Click HERE to show results for all gene sets","</b></summary><br><p>",sep=" " )
+
+cat(HEADER)
+
+kbl(ora_arranged2016, format="html", row.names=FALSE, caption = "Complete results",digits=100) %>%
+kable_styling("hover", full_width = FALSE)
+
+cat("<br></p></details>")
+cat("<hr><br>")
+
+```
+
+
+### Save object
+
+```{r, save_object}
+
+#saveRDS(ora_arranged2016, file = "ora.RDS")
+saveRDS(ora_arranged2016, file = "ora_arranged2016Jan.RDS")
+#saveRDS(ora_fdr2016, file = "ora_fdr2016.RDS")
+# z <- readRDS("ora.RDS")  #To read RDS 
+
+```
+
+### Session information
+
+For reproducibility.
+
+```{r,sessioninfo}
+
+sessionInfo()
+
+```

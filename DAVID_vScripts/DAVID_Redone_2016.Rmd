@@ -9,9 +9,14 @@ output:
     fig_height: 7
 theme: cosmo
 date: "`r Sys.Date()`"
+params:
+  gene_file: "../input_lists/Repro_check/Low impact gene lists/37436901_endothelial_input.txt" ##edit gene list name here
+  report_title: "PMID 37436901" ##edit Paper ID here to save
 ---
 
 ## This is for DAVID 2016 (6.8 version) 
+
+## Analysing paper PMID:37436901
 
 ### Loading libraries
 
@@ -24,6 +29,7 @@ library("rio")
 library("here")
 library("gtsummary")
 library("ggplot2")
+library("rmarkdown")
 
 ```
 
@@ -32,7 +38,9 @@ library("ggplot2")
 
 ``` {r, loading_input_genes}
 
-genelist <- read.table("../input_lists/PMID36259947_genes.txt")
+#genelist <- read.table("../input_lists/Repro_check/Low impact gene lists/params$37436901_endothelial_input.txt")
+
+genelist <- read.table(params$gene_file, header = TRUE, sep = "\t", stringsAsFactors = FALSE)
 
 #getwd() 
 #setwd("..")
@@ -49,6 +57,8 @@ gobp2016 <- readRDS("../go_gaf_datasets/go2016/GObp.rds")
 gocc2016 <- readRDS("../go_gaf_datasets/go2016/GOcc.rds")
 gomf2016 <- readRDS("../go_gaf_datasets/go2016/GOmf.rds")
 gocombined2016 <- readRDS("../go_gaf_datasets/go2016/GOcombined.rds")
+
+gomouseRDS <- readRDS("../go_gaf_datasets/mouse/2016-04/mouse_go.Rds") #only for mouse
 
 ```
 
@@ -67,6 +77,8 @@ str(gomf_terms)
 gocombined_terms <- rev(stack(gocombined2016))
 str(gocombined_terms)
 
+gomouse <- rev(stack(gomouseRDS))
+str(gomouse)
 ```
 
 ### Performing Enrichment analysis
@@ -77,7 +89,7 @@ for TERM2GENE, options are: gobp_terms, gocc_terms, gomf_terms, gocombined_terms
 ora <- as.data.frame(enricher(gene = Genevec ,
                               minGSSize = 10,
                               maxGSSize = 50000, 
-                              TERM2GENE = gocombined_terms, 
+                              TERM2GENE =  gomouse, 
                               pAdjustMethod="fdr",  
                               pvalueCutoff = 1, 
                               qvalueCutoff = 1  ))
@@ -108,14 +120,14 @@ GO:0002682
 ```{r,test1}
 
 # collect reference sets
-GO0001654 <- gocombined_terms[grep("GO:0001654",gocombined_terms$ind),2]
-GO0001764 <- gocombined_terms[grep("GO:0001764",gocombined_terms$ind),2]
-GO0002682 <- gocombined_terms[grep("GO:0002682",gocombined_terms$ind),2]
+# GO0001654 <- gocombined_terms[grep("GO:0001654",gocombined_terms$ind),2]
+#GO0001764 <- gocombined_terms[grep("GO:0001764",gocombined_terms$ind),2]
+#GO0002682 <- gocombined_terms[grep("GO:0002682",gocombined_terms$ind),2]
 
 # intersect with input list
-length(which(GO0001654 %in% Genevec))
-length(which(GO0001764 %in% Genevec))
-length(which(GO0002682 %in% Genevec))
+#length(which(GO0001654 %in% Genevec))
+#length(which(GO0001764 %in% Genevec))
+#length(which(GO0002682 %in% Genevec))
 
 ```
 
@@ -194,6 +206,15 @@ saveRDS(ora_arranged2016, file = "ora_arranged2016.RDS")
 # z <- readRDS("ora.RDS")  #To read RDS 
 
 ```
+
+### Saving HTML outputs
+rmarkdown::render("DAVID_vScripts/DAVID_Redone_2016.Rmd",
+       params = list(
+         gene_file = "../input_lists/Repro_check/Low impact gene lists/37436901_endothelial_input.txt",
+         report_title = "PMID 37436901"
+       ),
+       output_file = "37436901_endothelial_report.html",
+       output_dir = "HTML_outputs")
 
 ### Session information
 

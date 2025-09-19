@@ -1,0 +1,15 @@
+---
+title: "Comparison_Script"
+author: "Anusuiya Bora; s222331482@deakin.edu.au"
+date: "`r Sys.Date()`"
+---
+
+### DAVID Results from the paper:
+
+```{r, setupDAVIDresults}
+
+getwd()
+list.files()
+#DAVIDweb_results <- read.table("output_lists/PMID36828809_output.txt", sep = "\t", header = TRUE) 
+
+```

@@ -1,4 +1,4 @@
-## 👋 About Me
+# 👋 About Me
 
 I am a **Bioinformatics & Computational Biology Researcher** (PhD Candidate at Deakin University & Burnet Institute) specialising in high-dimensional transcriptomics analysis, and reproducible data analysis techniques. 
 
@@ -14,9 +14,8 @@ This project addresses this critical gap in computational reproducibility by:
 2. **Reproducibility Audit:** Evaluating the sensitivity of published enrichment results to outdated gene knowledgebases, default background specifications, and software version shifts across transcriptomic studies (bulk & single-cell RNA-seq).
 3. **Open R Framework:** Providing a reproducible R package/workflow to recreate historical DAVID v6.8 outputs programmatically.
 
----
 
-## 🔬 Key Scientific & Methodological Findings
+# 🔬 Key Scientific & Methodological Findings
 
 - **Journal Impact Irrelevance:** Methodological deficiencies (such as relying on whole-genome default backgrounds instead of assay-specific background universes) degrade enrichment accuracy **irrespective of journal impact factor**.
 - **Knowledgebase Drift:** Variations occur as knowledgebases are updated. This also results in changes to the p-values and over-representation analysis (ORA) term rankings for identical input gene lists.

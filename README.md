@@ -10,7 +10,7 @@ I am a **Bioinformatics & Computational Biology Researcher** (PhD Candidate at D
 DAVID v6.8 (Database for Annotation, Visualization and Integrated Discovery) was a cornerstone web tool for functional annotation and pathway enrichment analysis, cited in **~100,000 biomedical studies** across high- and low-impact journals. Following the extinction of the v6.8 web version, reproducing or validating these historical analyses has become virtually impossible for the scientific community.
 
 This project addresses this critical gap in computational reproducibility by:
-1. **Archival Revival:** Reconstructing the archived knowledgebase and annotation mappings underlying DAVID v6.8 for Gene Ontology.
+1. **Revival of extinct DAVID version for Gene Ontology:** Reconstructing the archived knowledgebase and annotation mappings underlying DAVID v6.8 for Gene Ontology.
 2. **Reproducibility Audit:** Evaluating the sensitivity of published enrichment results to outdated gene knowledgebases, default background specifications, and software version shifts across transcriptomic studies (bulk & single-cell RNA-seq).
 3. **Open R Framework:** Providing a reproducible R package/workflow to recreate historical DAVID v6.8 outputs programmatically.
 
